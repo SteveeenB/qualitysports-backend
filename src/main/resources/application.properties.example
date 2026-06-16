@@ -1,0 +1,28 @@
+spring.application.name=backend
+
+# ── PostgreSQL (Supabase) ──────────────────────────────────────────
+spring.datasource.url=jdbc:postgresql://<host>.pooler.supabase.com:5432/postgres?sslmode=require&prepareThreshold=0
+spring.datasource.username=postgres.<project-ref>
+spring.datasource.password=TU_PASSWORD_AQUI
+
+# ── JPA / Hibernate ───────────────────────────────────────────────
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# ── JWT ────────────────────────────────────────────────────────────
+# Genera un secret con: openssl rand -base64 32
+jwt.secret=TU_JWT_SECRET_BASE64_AQUI
+jwt.expiration-ms=21600000
+
+# ── Supabase Storage ──────────────────────────────────────────────
+# URL del proyecto: https://<project-ref>.supabase.co
+supabase.project-url=https://TU_PROJECT_REF.supabase.co
+# Service role key (Supabase → Settings → API → service_role, NO la anon key)
+supabase.service-role-key=eyJ...
+# Nombre del bucket (debe ser público en Supabase → Storage)
+supabase.storage.bucket=productos
+
+# ── Multipart (subida de imágenes) ───────────────────────────────
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=5MB

@@ -10,5 +10,7 @@ public interface ReglaPaqueteRepository extends JpaRepository<ReglaPaquete, Long
 
     Optional<ReglaPaquete> findByCantidadParesAndActivoTrue(Integer cantidadPares);
 
+    Optional<ReglaPaquete> findTopByCantidadParesLessThanEqualAndActivoTrueOrderByCantidadParesDesc(Integer cantidadPares);
+
     List<ReglaPaquete> findAllByActivoTrueOrderByCantidadParesAsc();
 }

@@ -5,10 +5,10 @@ import com.qualitysports.backend.admin.entity.ReglaPaquete;
 import com.qualitysports.backend.admin.repository.ReglaPaqueteRepository;
 import com.qualitysports.backend.pedido.repository.PedidoRepository;
 import com.qualitysports.backend.pedido.service.PedidoService;
-import com.qualitysports.backend.user.AsesorVentasRepository;
-import com.qualitysports.backend.user.ClienteRepository;
+import com.qualitysports.backend.user.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,9 +24,11 @@ public class AdminService {
 
     private final ClienteRepository clienteRepository;
     private final AsesorVentasRepository asesorVentasRepository;
+    private final UserRepository userRepository;
     private final PedidoRepository pedidoRepository;
     private final PedidoService pedidoService;
     private final ReglaPaqueteRepository reglaPaqueteRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<ClienteAdminDTO> listarClientes() {
@@ -38,10 +40,85 @@ public class AdminService {
 
     @Transactional(readOnly = true)
     public List<AsesorDTO> listarAsesores() {
-        return asesorVentasRepository.findAllByActivoTrue().stream()
+        return asesorVentasRepository.findAll().stream()
                 .map(a -> new AsesorDTO(a.getId(), a.getNombre(), a.getEmail(),
-                        a.getTelefono(), a.getZonaAsignada()))
+                        a.getTelefono(), a.isActivo()))
                 .toList();
+    }
+
+    @Transactional
+    public AsesorDTO crearAsesor(CrearAsesorRequest req) {
+        if (userRepository.existsByEmail(req.email()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo.");
+        AsesorVentas asesor = AsesorVentas.builder()
+                .nombre(req.nombre())
+                .email(req.email())
+                .password(passwordEncoder.encode(req.password()))
+                .telefono(req.telefono())
+                .role(Role.ASESOR_VENTAS)
+                .activo(true)
+                .build();
+        asesor = asesorVentasRepository.save(asesor);
+        return new AsesorDTO(asesor.getId(), asesor.getNombre(), asesor.getEmail(), asesor.getTelefono(), asesor.isActivo());
+    }
+
+    @Transactional
+    public AsesorDTO actualizarAsesor(Long id, ActualizarAsesorRequest req) {
+        AsesorVentas asesor = asesorVentasRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asesor no encontrado."));
+        if (req.nombre()   != null) asesor.setNombre(req.nombre());
+        if (req.email()    != null) asesor.setEmail(req.email());
+        if (req.telefono() != null) asesor.setTelefono(req.telefono());
+        if (req.activo()   != null) asesor.setActivo(req.activo());
+        asesor = asesorVentasRepository.save(asesor);
+        return new AsesorDTO(asesor.getId(), asesor.getNombre(), asesor.getEmail(), asesor.getTelefono(), asesor.isActivo());
+    }
+
+    @Transactional
+    public void desactivarAsesor(Long id) {
+        AsesorVentas asesor = asesorVentasRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asesor no encontrado."));
+        asesor.setActivo(false);
+        asesorVentasRepository.save(asesor);
+    }
+
+    @Transactional
+    public ClienteAdminDTO crearCliente(CrearClienteRequest req) {
+        if (userRepository.existsByEmail(req.email()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo.");
+        Cliente cliente = Cliente.builder()
+                .nombre(req.nombre())
+                .email(req.email())
+                .password(passwordEncoder.encode(req.password()))
+                .telefono(req.telefono())
+                .direccionEnvio(req.direccionEnvio())
+                .role(Role.CLIENTE)
+                .activo(true)
+                .build();
+        cliente = clienteRepository.save(cliente);
+        return new ClienteAdminDTO(cliente.getId(), cliente.getNombre(), cliente.getEmail(),
+                cliente.getTelefono(), cliente.getDireccionEnvio(), cliente.isActivo(), cliente.getCreatedAt());
+    }
+
+    @Transactional
+    public ClienteAdminDTO actualizarCliente(Long id, ActualizarClienteRequest req) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado."));
+        if (req.nombre()         != null) cliente.setNombre(req.nombre());
+        if (req.email()          != null) cliente.setEmail(req.email());
+        if (req.telefono()       != null) cliente.setTelefono(req.telefono());
+        if (req.direccionEnvio() != null) cliente.setDireccionEnvio(req.direccionEnvio());
+        cliente = clienteRepository.save(cliente);
+        return new ClienteAdminDTO(cliente.getId(), cliente.getNombre(), cliente.getEmail(),
+                cliente.getTelefono(), cliente.getDireccionEnvio(), cliente.isActivo(), cliente.getCreatedAt());
+    }
+
+    @Transactional
+    public void desactivarCliente(Long id) {
+        Cliente cliente = clienteRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado."));
+        cliente.setActivo(false);
+        clienteRepository.save(cliente);
     }
 
     @Transactional(readOnly = true)

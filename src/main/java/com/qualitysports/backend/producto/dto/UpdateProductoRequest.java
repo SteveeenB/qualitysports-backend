@@ -9,5 +9,6 @@ public record UpdateProductoRequest(
         BigDecimal precioBase,
         String imagenUrl,
         Long categoriaId,
+        Long modeloId,
         Set<Integer> tallasDisponibles
 ) {}

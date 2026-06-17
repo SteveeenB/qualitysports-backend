@@ -62,11 +62,15 @@ public class Pedido {
     @Column(nullable = false)
     private String compradorTelefono;
 
+    private String compradorEmail;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ModalidadEntrega modalidadEntrega;
 
     private String direccionEnvio;
+
+    private String barrio;
 
     @Column(nullable = false)
     private String municipio;

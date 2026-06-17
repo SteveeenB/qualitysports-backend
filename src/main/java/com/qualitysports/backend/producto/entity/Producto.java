@@ -35,6 +35,10 @@ public class Producto {
     @JoinColumn(name = "categoria_id")
     private Categoria categoria;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "modelo_id")
+    private Modelo modelo;
+
     @Builder.Default
     @Column(nullable = false)
     private boolean activo = true;

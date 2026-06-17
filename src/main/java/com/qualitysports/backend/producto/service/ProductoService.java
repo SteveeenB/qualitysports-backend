@@ -3,8 +3,10 @@ package com.qualitysports.backend.producto.service;
 import com.qualitysports.backend.config.SupabaseStorageService;
 import com.qualitysports.backend.producto.dto.*;
 import com.qualitysports.backend.producto.entity.Categoria;
+import com.qualitysports.backend.producto.entity.Modelo;
 import com.qualitysports.backend.producto.entity.Producto;
 import com.qualitysports.backend.producto.repository.CategoriaRepository;
+import com.qualitysports.backend.producto.repository.ModeloRepository;
 import com.qualitysports.backend.producto.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,11 +28,17 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
+    private final ModeloRepository modeloRepository;
     private final SupabaseStorageService supabaseStorageService;
 
     @Transactional(readOnly = true)
     public Page<ProductoDTO> listarActivos(Pageable pageable) {
         return productoRepository.findByActivoTrue(pageable).map(this::toDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductoDTO> listarActivosPorModelo(Long modeloId, Pageable pageable) {
+        return productoRepository.findByModelo_IdAndActivoTrue(modeloId, pageable).map(this::toDTO);
     }
 
     @Transactional(readOnly = true)
@@ -65,15 +73,54 @@ public class ProductoService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ModeloDTO> listarModelos() {
+        return modeloRepository.findAll().stream()
+                .map(m -> {
+                    String img = productoRepository
+                            .findFirstByModelo_IdAndActivoTrueAndImagenUrlIsNotNull(m.getId())
+                            .map(Producto::getImagenUrl)
+                            .orElse(null);
+                    return new ModeloDTO(m.getId(), m.getNombre(), img);
+                })
+                .toList();
+    }
+
+    @Transactional
+    public ModeloDTO crearModelo(String nombre) {
+        if (modeloRepository.existsByNombre(nombre))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un modelo con ese nombre");
+        Modelo m = modeloRepository.save(Modelo.builder().nombre(nombre).build());
+        return new ModeloDTO(m.getId(), m.getNombre(), null);
+    }
+
+    @Transactional
+    public ModeloDTO actualizarModelo(Long id, String nombre) {
+        Modelo m = modeloRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Modelo no encontrado"));
+        m.setNombre(nombre);
+        return new ModeloDTO(m.getId(), m.getNombre(), null);
+    }
+
+    @Transactional
+    public void eliminarModelo(Long id) {
+        if (!modeloRepository.existsById(id))
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Modelo no encontrado");
+        if (productoRepository.existsByModelo_Id(id))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No se puede eliminar: hay productos asignados a este modelo");
+        modeloRepository.deleteById(id);
+    }
+
     @Transactional
     public ProductoDTO crear(CreateProductoRequest req) {
-        Categoria categoria = resolverCategoria(req.categoriaId());
         Producto producto = Producto.builder()
                 .nombre(req.nombre())
                 .descripcion(req.descripcion())
                 .precioBase(req.precioBase())
                 .imagenUrl(req.imagenUrl())
-                .categoria(categoria)
+                .categoria(resolverCategoria(req.categoriaId()))
+                .modelo(resolverModelo(req.modeloId()))
                 .tallasDisponibles(req.tallasDisponibles() != null ? new HashSet<>(req.tallasDisponibles()) : new HashSet<>())
                 .build();
         return toDTO(productoRepository.save(producto));
@@ -89,6 +136,7 @@ public class ProductoService {
         if (req.precioBase() != null) producto.setPrecioBase(req.precioBase());
         if (req.imagenUrl() != null) producto.setImagenUrl(req.imagenUrl());
         if (req.categoriaId() != null) producto.setCategoria(resolverCategoria(req.categoriaId()));
+        if (req.modeloId() != null) producto.setModelo(resolverModelo(req.modeloId()));
         if (req.tallasDisponibles() != null) producto.setTallasDisponibles(new HashSet<>(req.tallasDisponibles()));
 
         return toDTO(productoRepository.save(producto));
@@ -143,11 +191,20 @@ public class ProductoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoría no encontrada"));
     }
 
+    private Modelo resolverModelo(Long modeloId) {
+        if (modeloId == null) return null;
+        return modeloRepository.findById(modeloId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Modelo no encontrado"));
+    }
+
     public ProductoDTO toDTO(Producto p) {
         CategoriaDTO catDTO = p.getCategoria() != null
                 ? new CategoriaDTO(p.getCategoria().getId(), p.getCategoria().getNombreCategoria())
                 : null;
+        ModeloDTO modDTO = p.getModelo() != null
+                ? new ModeloDTO(p.getModelo().getId(), p.getModelo().getNombre(), null)
+                : null;
         return new ProductoDTO(p.getId(), p.getNombre(), p.getDescripcion(),
-                p.getPrecioBase(), p.getImagenUrl(), catDTO, p.isActivo(), p.getTallasDisponibles());
+                p.getPrecioBase(), p.getImagenUrl(), catDTO, modDTO, p.isActivo(), p.getTallasDisponibles());
     }
 }

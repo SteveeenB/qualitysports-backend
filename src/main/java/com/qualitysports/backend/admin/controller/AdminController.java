@@ -29,9 +29,43 @@ public class AdminController {
         return pedidoService.pedidosDeCliente(id);
     }
 
+    @PostMapping("/clientes")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ClienteAdminDTO crearCliente(@RequestBody CrearClienteRequest req) {
+        return adminService.crearCliente(req);
+    }
+
+    @PutMapping("/clientes/{id}")
+    public ClienteAdminDTO actualizarCliente(@PathVariable Long id, @RequestBody ActualizarClienteRequest req) {
+        return adminService.actualizarCliente(id, req);
+    }
+
+    @DeleteMapping("/clientes/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void desactivarCliente(@PathVariable Long id) {
+        adminService.desactivarCliente(id);
+    }
+
     @GetMapping("/asesores")
     public List<AsesorDTO> listarAsesores() {
         return adminService.listarAsesores();
+    }
+
+    @PostMapping("/asesores")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AsesorDTO crearAsesor(@RequestBody CrearAsesorRequest req) {
+        return adminService.crearAsesor(req);
+    }
+
+    @PutMapping("/asesores/{id}")
+    public AsesorDTO actualizarAsesor(@PathVariable Long id, @RequestBody ActualizarAsesorRequest req) {
+        return adminService.actualizarAsesor(id, req);
+    }
+
+    @DeleteMapping("/asesores/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void desactivarAsesor(@PathVariable Long id) {
+        adminService.desactivarAsesor(id);
     }
 
     @GetMapping("/kpis")

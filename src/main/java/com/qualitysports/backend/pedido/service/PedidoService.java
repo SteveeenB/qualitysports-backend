@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -96,8 +97,10 @@ public class PedidoService {
                 .compradorApellido(req.compradorApellido())
                 .compradorCedula(req.compradorCedula())
                 .compradorTelefono(req.compradorTelefono())
+                .compradorEmail(req.compradorEmail())
                 .modalidadEntrega(req.modalidadEntrega())
                 .direccionEnvio(req.direccionEnvio())
+                .barrio(req.barrio())
                 .municipio(req.municipio())
                 .departamento(req.departamento())
                 .build();
@@ -227,13 +230,24 @@ public class PedidoService {
     // ── Lógica interna ───────────────────────────────────────────────────────
 
     private BigDecimal[] calcularTotales(BigDecimal subtotal, int totalPares) {
-        Optional<ReglaPaquete> regla = reglaPaqueteRepository.findByCantidadParesAndActivoTrue(totalPares);
+        Optional<ReglaPaquete> regla = reglaPaqueteRepository
+                .findTopByCantidadParesLessThanEqualAndActivoTrueOrderByCantidadParesDesc(totalPares);
         if (regla.isPresent()) {
-            BigDecimal totalNeto = regla.get().getPrecioTotalPaquete();
+            BigDecimal precioPorPar = regla.get().getPrecioTotalPaquete()
+                    .divide(BigDecimal.valueOf(regla.get().getCantidadPares()), 2, RoundingMode.HALF_UP);
+            BigDecimal totalNeto = precioPorPar.multiply(BigDecimal.valueOf(totalPares));
             BigDecimal descuento = subtotal.subtract(totalNeto).max(BigDecimal.ZERO);
             return new BigDecimal[]{descuento, totalNeto};
         }
         return new BigDecimal[]{BigDecimal.ZERO, subtotal};
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.qualitysports.backend.admin.dto.ReglaPaqueteDTO> listarReglas() {
+        return reglaPaqueteRepository.findAllByActivoTrueOrderByCantidadParesAsc().stream()
+                .map(r -> new com.qualitysports.backend.admin.dto.ReglaPaqueteDTO(
+                        r.getId(), r.getCantidadPares(), r.getPrecioTotalPaquete()))
+                .toList();
     }
 
     private AsesorVentas asignarAsesor() {

@@ -23,7 +23,10 @@ public class ProductoController {
     // ── Rutas públicas ────────────────────────────────────────────────────────
 
     @GetMapping("/api/productos")
-    public Page<ProductoDTO> listar(@PageableDefault(size = 20) Pageable pageable) {
+    public Page<ProductoDTO> listar(
+            @RequestParam(required = false) Long modeloId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        if (modeloId != null) return productoService.listarActivosPorModelo(modeloId, pageable);
         return productoService.listarActivos(pageable);
     }
 
@@ -42,7 +45,12 @@ public class ProductoController {
         return productoService.listarCategorias();
     }
 
-    // ── Rutas admin ───────────────────────────────────────────────────────────
+    @GetMapping("/api/modelos")
+    public List<ModeloDTO> modelos() {
+        return productoService.listarModelos();
+    }
+
+    // ── Rutas admin — productos ───────────────────────────────────────────────
 
     @GetMapping("/api/admin/productos")
     public Page<ProductoDTO> listarAdmin(@PageableDefault(size = 20) Pageable pageable) {
@@ -75,5 +83,29 @@ public class ProductoController {
     public ProductoDTO cambiarEstado(@PathVariable Long id, @RequestBody Map<String, Boolean> body) {
         boolean activo = body.getOrDefault("activo", true);
         return productoService.cambiarEstado(id, activo);
+    }
+
+    // ── Rutas admin — modelos ─────────────────────────────────────────────────
+
+    @GetMapping("/api/admin/modelos")
+    public List<ModeloDTO> listarModelosAdmin() {
+        return productoService.listarModelos();
+    }
+
+    @PostMapping("/api/admin/modelos")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ModeloDTO crearModelo(@RequestBody Map<String, String> body) {
+        return productoService.crearModelo(body.get("nombre"));
+    }
+
+    @PutMapping("/api/admin/modelos/{id}")
+    public ModeloDTO actualizarModelo(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return productoService.actualizarModelo(id, body.get("nombre"));
+    }
+
+    @DeleteMapping("/api/admin/modelos/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminarModelo(@PathVariable Long id) {
+        productoService.eliminarModelo(id);
     }
 }

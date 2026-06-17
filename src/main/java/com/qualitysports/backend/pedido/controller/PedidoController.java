@@ -1,5 +1,6 @@
 package com.qualitysports.backend.pedido.controller;
 
+import com.qualitysports.backend.admin.dto.ReglaPaqueteDTO;
 import com.qualitysports.backend.pedido.dto.*;
 import com.qualitysports.backend.pedido.service.PedidoService;
 import com.qualitysports.backend.user.Cliente;
@@ -17,6 +18,13 @@ import java.util.List;
 public class PedidoController {
 
     private final PedidoService pedidoService;
+
+    // ── Endpoint público — descuentos ─────────────────────────────────────────
+
+    @GetMapping("/api/descuentos")
+    public List<ReglaPaqueteDTO> descuentosPublicos() {
+        return pedidoService.listarReglas();
+    }
 
     // ── Checkout público ──────────────────────────────────────────────────────
 

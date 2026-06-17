@@ -12,9 +12,15 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
     Page<Producto> findByActivoTrue(Pageable pageable);
 
+    Page<Producto> findByModelo_IdAndActivoTrue(Long modeloId, Pageable pageable);
+
     List<Producto> findByNombreContainingIgnoreCaseAndActivoTrue(String q);
 
     List<Producto> findByCategoria_IdAndActivoTrue(Long categoriaId);
 
     Optional<Producto> findByIdAndActivoTrue(Long id);
+
+    Optional<Producto> findFirstByModelo_IdAndActivoTrueAndImagenUrlIsNotNull(Long modeloId);
+
+    boolean existsByModelo_Id(Long modeloId);
 }

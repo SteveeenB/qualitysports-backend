@@ -13,5 +13,6 @@ public record CreateProductoRequest(
         @NotNull @DecimalMin("0.01") BigDecimal precioBase,
         String imagenUrl,
         Long categoriaId,
+        Long modeloId,
         Set<Integer> tallasDisponibles
 ) {}

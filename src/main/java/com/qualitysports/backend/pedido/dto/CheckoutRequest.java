@@ -13,9 +13,11 @@ public record CheckoutRequest(
         @NotBlank String compradorApellido,
         String compradorCedula,
         @NotBlank String compradorTelefono,
+        String compradorEmail,
         @NotNull ModalidadEntrega modalidadEntrega,
         String direccionEnvio,
-        @NotBlank String municipio,
-        @NotBlank String departamento,
+        String barrio,
+        String municipio,
+        String departamento,
         @NotEmpty @Valid List<CheckoutItemRequest> items
 ) {}

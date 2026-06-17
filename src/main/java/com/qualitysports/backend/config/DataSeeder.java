@@ -96,7 +96,6 @@ public class DataSeeder implements CommandLineRunner {
                     .password(passwordEncoder.encode("Asesor2026*"))
                     .role(Role.ASESOR_VENTAS)
                     .activo(true)
-                    .zonaAsignada("Norte")
                     .telefono("573001000001")
                     .build();
             userRepository.save(a1);
@@ -110,7 +109,6 @@ public class DataSeeder implements CommandLineRunner {
                     .password(passwordEncoder.encode("Asesor2026*"))
                     .role(Role.ASESOR_VENTAS)
                     .activo(true)
-                    .zonaAsignada("Sur")
                     .telefono("573001000002")
                     .build();
             userRepository.save(a2);

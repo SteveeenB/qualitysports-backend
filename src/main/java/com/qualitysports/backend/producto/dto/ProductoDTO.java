@@ -10,6 +10,7 @@ public record ProductoDTO(
         BigDecimal precioBase,
         String imagenUrl,
         CategoriaDTO categoria,
+        ModeloDTO modelo,
         boolean activo,
         Set<Integer> tallasDisponibles
 ) {}

@@ -17,6 +17,5 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 public class AsesorVentas extends User {
 
-    private String zonaAsignada;
     private String telefono;
 }

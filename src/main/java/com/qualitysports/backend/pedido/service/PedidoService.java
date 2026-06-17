@@ -128,11 +128,18 @@ public class PedidoService {
                 .observaciones("Pedido creado")
                 .build());
 
-        String whatsappUrl = generarUrlWhatsApp(asesor, pedido);
+        List<CheckoutItemResponse> itemsResp = req.items().stream()
+                .map(i -> {
+                    Producto p = productosCache.get(i.productoId());
+                    return new CheckoutItemResponse(
+                            p.getNombre(), p.getImagenUrl(), i.talla(), i.cantidad(), p.getPrecioBase());
+                }).toList();
+
+        String whatsappUrl = generarUrlWhatsApp(asesor, pedido, req.items(), productosCache);
 
         return new CheckoutResponse(pedido.getId(),
                 pedido.getCompradorNombre(), pedido.getCompradorApellido(),
-                subtotal, descuentoAplicado, totalNeto, whatsappUrl);
+                subtotal, descuentoAplicado, totalNeto, whatsappUrl, itemsResp);
     }
 
     // BUG 1 FIX: @Transactional(readOnly=true) en todos los métodos de lectura
@@ -260,18 +267,52 @@ public class PedidoService {
         return asesores.get(idx);
     }
 
-    private String generarUrlWhatsApp(AsesorVentas asesor, Pedido pedido) {
+    private String generarUrlWhatsApp(AsesorVentas asesor, Pedido pedido,
+            List<CheckoutItemRequest> items, Map<Long, Producto> productosCache) {
+
+        StringBuilder sb = new StringBuilder();
+        for (CheckoutItemRequest item : items) {
+            Producto p = productosCache.get(item.productoId());
+            sb.append(String.format("• %s – T%d ×%d → $%s%n",
+                    p.getNombre(), item.talla(), item.cantidad(),
+                    formatPrecio(p.getPrecioBase().multiply(BigDecimal.valueOf(item.cantidad())))));
+            if (p.getImagenUrl() != null && !p.getImagenUrl().isBlank()) {
+                sb.append("  📸 ").append(p.getImagenUrl()).append("\n");
+            }
+        }
+
+        String entrega = pedido.getModalidadEntrega() == ModalidadEntrega.DOMICILIO
+                ? String.format("📍 Envío a: %s, %s", pedido.getMunicipio(), pedido.getDepartamento())
+                : "🏪 Retiro en oficina";
+
+        String descto = pedido.getDescuentoAplicado().compareTo(BigDecimal.ZERO) > 0
+                ? String.format("%n💸 Descuento: -$%s", formatPrecio(pedido.getDescuentoAplicado()))
+                : "";
+
         String msg = String.format(
-                "Hola, soy %s %s. Acabo de realizar el pedido #%d por $%s. " +
-                "Entrega: %s, %s (%s). Teléfono: %s.",
-                pedido.getCompradorNombre(), pedido.getCompradorApellido(),
-                pedido.getId(), pedido.getTotalNeto().toPlainString(),
-                pedido.getMunicipio(), pedido.getDepartamento(),
-                pedido.getModalidadEntrega().name(),
-                pedido.getCompradorTelefono()
+                "Hola, acabo de hacer un pedido en *QualitySports* 👟%n%n" +
+                "*Pedido #QS-%d*%n%n" +
+                "📦 *Productos:*%n%s%n" +
+                "%s%n" +
+                "📞 Tel: %s%n%n" +
+                "💵 Subtotal: $%s%s%n" +
+                "✅ *Total: $%s COP*%n%n" +
+                "Quedo pendiente de la confirmación.",
+                pedido.getId(),
+                sb,
+                entrega,
+                pedido.getCompradorTelefono(),
+                formatPrecio(pedido.getSubtotal()),
+                descto,
+                formatPrecio(pedido.getTotalNeto())
         );
+
         String encoded = URLEncoder.encode(msg, StandardCharsets.UTF_8);
         return "https://wa.me/" + asesor.getTelefono() + "?text=" + encoded;
+    }
+
+    private String formatPrecio(BigDecimal v) {
+        return new java.text.DecimalFormat("#,###").format(v);
     }
 
     public PedidoResponse toResponse(Pedido pedido) {

@@ -1,6 +1,7 @@
 package com.qualitysports.backend.pedido.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record CheckoutResponse(
         Long pedidoId,
@@ -9,5 +10,6 @@ public record CheckoutResponse(
         BigDecimal subtotal,
         BigDecimal descuentoAplicado,
         BigDecimal totalNeto,
-        String whatsappUrl
+        String whatsappUrl,
+        List<CheckoutItemResponse> items
 ) {}

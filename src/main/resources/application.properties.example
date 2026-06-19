@@ -1,9 +1,15 @@
 spring.application.name=backend
 
 # ── PostgreSQL (Supabase) ──────────────────────────────────────────
-spring.datasource.url=jdbc:postgresql://<host>.pooler.supabase.com:5432/postgres?sslmode=require&prepareThreshold=0
-spring.datasource.username=postgres.<project-ref>
-spring.datasource.password=TU_PASSWORD_AQUI
+spring.datasource.url=${SPRING_DATASOURCE_URL}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+
+# ── HikariCP (connection pool) ────────────────────────────────────
+spring.datasource.hikari.maximum-pool-size=5
+spring.datasource.hikari.minimum-idle=2
+spring.datasource.hikari.connection-timeout=20000
+spring.datasource.hikari.idle-timeout=300000
 
 # ── JPA / Hibernate ───────────────────────────────────────────────
 spring.jpa.hibernate.ddl-auto=update
@@ -11,18 +17,20 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
 # ── JWT ────────────────────────────────────────────────────────────
-# Genera un secret con: openssl rand -base64 32
-jwt.secret=TU_JWT_SECRET_BASE64_AQUI
-jwt.expiration-ms=21600000
+jwt.secret=${JWT_SECRET}
+jwt.expiration-ms=${JWT_EXPIRATION_MS:21600000}
 
 # ── Supabase Storage ──────────────────────────────────────────────
-# URL del proyecto: https://<project-ref>.supabase.co
-supabase.project-url=https://TU_PROJECT_REF.supabase.co
-# Service role key (Supabase → Settings → API → service_role, NO la anon key)
-supabase.service-role-key=eyJ...
-# Nombre del bucket (debe ser público en Supabase → Storage)
-supabase.storage.bucket=productos
+supabase.project-url=${SUPABASE_PROJECT_URL}
+supabase.service-role-key=${SUPABASE_SERVICE_ROLE_KEY}
+supabase.storage.bucket=${SUPABASE_STORAGE_BUCKET:productos}
 
-# ── Multipart (subida de imágenes) ───────────────────────────────
+# ── Server ────────────────────────────────────────────────────────
+server.port=${PORT:8080}
+
+# ── CORS ──────────────────────────────────────────────────────────
+cors.allowed-origins=${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+# ── Multipart ─────────────────────────────────────────────────────
 spring.servlet.multipart.max-file-size=5MB
 spring.servlet.multipart.max-request-size=5MB

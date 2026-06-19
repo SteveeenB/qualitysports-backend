@@ -270,6 +270,19 @@ public class PedidoService {
     private String generarUrlWhatsApp(AsesorVentas asesor, Pedido pedido,
             List<CheckoutItemRequest> items, Map<Long, Producto> productosCache) {
 
+        // ── Bloque cliente ────────────────────────────────────────────────────
+        StringBuilder cliente = new StringBuilder();
+        cliente.append(String.format("👤 *Cliente:* %s %s%n",
+                pedido.getCompradorNombre(), pedido.getCompradorApellido()));
+        if (pedido.getCompradorCedula() != null && !pedido.getCompradorCedula().isBlank()) {
+            cliente.append(String.format("📋 Cédula: %s%n", pedido.getCompradorCedula()));
+        }
+        if (pedido.getCompradorEmail() != null && !pedido.getCompradorEmail().isBlank()) {
+            cliente.append(String.format("📧 %s%n", pedido.getCompradorEmail()));
+        }
+        cliente.append(String.format("📞 Tel: %s", pedido.getCompradorTelefono()));
+
+        // ── Productos ─────────────────────────────────────────────────────────
         StringBuilder sb = new StringBuilder();
         for (CheckoutItemRequest item : items) {
             Producto p = productosCache.get(item.productoId());
@@ -281,9 +294,19 @@ public class PedidoService {
             }
         }
 
-        String entrega = pedido.getModalidadEntrega() == ModalidadEntrega.DOMICILIO
-                ? String.format("📍 Envío a: %s, %s", pedido.getMunicipio(), pedido.getDepartamento())
-                : "🏪 Retiro en oficina";
+        // ── Entrega ───────────────────────────────────────────────────────────
+        String entrega;
+        if (pedido.getModalidadEntrega() == ModalidadEntrega.DOMICILIO) {
+            StringBuilder dir = new StringBuilder("📍 ");
+            dir.append(pedido.getDireccionEnvio());
+            if (pedido.getBarrio() != null && !pedido.getBarrio().isBlank()) {
+                dir.append(", ").append(pedido.getBarrio());
+            }
+            dir.append(String.format(", %s, %s", pedido.getMunicipio(), pedido.getDepartamento()));
+            entrega = dir.toString();
+        } else {
+            entrega = "🏪 Retiro en oficina";
+        }
 
         String descto = pedido.getDescuentoAplicado().compareTo(BigDecimal.ZERO) > 0
                 ? String.format("%n💸 Descuento: -$%s", formatPrecio(pedido.getDescuentoAplicado()))
@@ -292,16 +315,16 @@ public class PedidoService {
         String msg = String.format(
                 "Hola, acabo de hacer un pedido en *QualitySports* 👟%n%n" +
                 "*Pedido #QS-%d*%n%n" +
+                "%s%n%n" +
                 "📦 *Productos:*%n%s%n" +
-                "%s%n" +
-                "📞 Tel: %s%n%n" +
+                "%s%n%n" +
                 "💵 Subtotal: $%s%s%n" +
                 "✅ *Total: $%s COP*%n%n" +
                 "Quedo pendiente de la confirmación.",
                 pedido.getId(),
+                cliente,
                 sb,
                 entrega,
-                pedido.getCompradorTelefono(),
                 formatPrecio(pedido.getSubtotal()),
                 descto,
                 formatPrecio(pedido.getTotalNeto())
@@ -343,7 +366,9 @@ public class PedidoService {
                 pedido.getSubtotal(),
                 pedido.getDescuentoAplicado(),
                 pedido.getTotalNeto(),
-                detalles
+                detalles,
+                pedido.getGuia(),
+                pedido.getTransportadora()
         );
     }
 }

@@ -21,5 +21,7 @@ public record PedidoResponse(
         BigDecimal subtotal,
         BigDecimal descuentoAplicado,
         BigDecimal totalNeto,
-        List<PedidoDetalleResponse> detalles
+        List<PedidoDetalleResponse> detalles,
+        String guia,
+        String transportadora
 ) {}

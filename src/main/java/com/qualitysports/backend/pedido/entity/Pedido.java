@@ -78,6 +78,10 @@ public class Pedido {
     @Column(nullable = false)
     private String departamento;
 
+    private String guia;
+
+    private String transportadora;
+
     @Builder.Default
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PedidoDetalle> detalles = new ArrayList<>();

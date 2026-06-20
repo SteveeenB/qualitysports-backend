@@ -343,6 +343,7 @@ public class PedidoService {
                 .map(d -> new PedidoDetalleResponse(
                         d.getProducto().getId(),
                         d.getProducto().getNombre(),
+                        d.getProducto().getImagenUrl(),
                         d.getTallaSeleccionada(),
                         d.getCantidad(),
                         d.getPrecioUnitario(),

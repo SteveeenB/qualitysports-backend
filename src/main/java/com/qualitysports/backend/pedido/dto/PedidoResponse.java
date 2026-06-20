@@ -23,5 +23,7 @@ public record PedidoResponse(
         BigDecimal totalNeto,
         List<PedidoDetalleResponse> detalles,
         String guia,
-        String transportadora
+        String transportadora,
+        String hekaShipmentId,
+        java.math.BigDecimal costoEnvio
 ) {}

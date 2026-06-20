@@ -234,6 +234,42 @@ public class PedidoService {
         return toResponse(pedidoRepository.save(pedido));
     }
 
+    @Transactional
+    public PedidoResponse registrarGuia(Long pedidoId, Long usuarioId,
+                                        String guideNumber, String distributorId,
+                                        String shipmentId, BigDecimal costoEnvio) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+
+        if (pedido.getGuia() != null && !pedido.getGuia().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este pedido ya tiene guía: " + pedido.getGuia());
+        }
+
+        pedido.setGuia(guideNumber);
+        pedido.setTransportadora(distributorId);
+        pedido.setHekaShipmentId(shipmentId);
+        pedido.setCostoEnvio(costoEnvio);
+
+        EstadoPedido estadoAnterior = pedido.getEstadoActual();
+        EstadoPedido enDespacho = estadoPedidoRepository.findByNombreEstado("En despacho")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Estado 'En despacho' no configurado"));
+
+        pedido.setEstadoActual(enDespacho);
+        pedidoRepository.save(pedido);
+
+        User modificadoPor = userRepository.findById(usuarioId).orElse(null);
+        historialEstadoRepository.save(HistorialEstado.builder()
+                .pedido(pedido)
+                .modificadoPor(modificadoPor)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(enDespacho)
+                .observaciones("Guía generada: " + guideNumber + " — " + distributorId)
+                .build());
+
+        return toResponse(pedido);
+    }
+
     // ── Lógica interna ───────────────────────────────────────────────────────
 
     private BigDecimal[] calcularTotales(BigDecimal subtotal, int totalPares) {
@@ -369,7 +405,9 @@ public class PedidoService {
                 pedido.getTotalNeto(),
                 detalles,
                 pedido.getGuia(),
-                pedido.getTransportadora()
+                pedido.getTransportadora(),
+                pedido.getHekaShipmentId(),
+                pedido.getCostoEnvio()
         );
     }
 }

@@ -56,14 +56,14 @@ public class HekaShippingService {
     public HekaCreateGuideResponse createGuide(HekaCreateGuideRequest req,
                                                String clientName, String clientLastName,
                                                String address, String phone,
-                                               String neighborhood) {
+                                               String neighborhood, String document) {
         Map<String, Object> clientData = new HashMap<>();
         clientData.put("name",              clientName);
         clientData.put("last_name",         clientLastName);
         clientData.put("address",           address);
         clientData.put("phone",             Long.parseLong(phone.replaceAll("\\D", "")));
         clientData.put("type_document",     "CC");
-        clientData.put("document",          "0");
+        clientData.put("document",          document != null && !document.isBlank() ? document : "0");
         clientData.put("neighborhood",      neighborhood != null ? neighborhood : "");
         clientData.put("note_destination",  "");
 

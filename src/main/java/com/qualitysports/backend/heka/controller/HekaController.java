@@ -92,7 +92,8 @@ public class HekaController {
                 pedido.getCompradorApellido(),
                 pedido.getDireccionEnvio(),
                 pedido.getCompradorTelefono(),
-                pedido.getBarrio()
+                pedido.getBarrio(),
+                pedido.getCompradorCedula()
         );
 
         if (hekaResp == null || hekaResp.response() == null) {

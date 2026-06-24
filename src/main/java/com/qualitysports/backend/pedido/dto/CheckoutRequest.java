@@ -19,5 +19,8 @@ public record CheckoutRequest(
         String barrio,
         String municipio,
         String departamento,
-        @NotEmpty @Valid List<CheckoutItemRequest> items
+        @NotEmpty @Valid List<CheckoutItemRequest> items,
+        String cityDane,
+        String fbp,
+        String fbc
 ) {}

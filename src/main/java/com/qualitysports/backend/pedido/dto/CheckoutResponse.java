@@ -11,5 +11,6 @@ public record CheckoutResponse(
         BigDecimal descuentoAplicado,
         BigDecimal totalNeto,
         String whatsappUrl,
-        List<CheckoutItemResponse> items
+        List<CheckoutItemResponse> items,
+        String metaEventId
 ) {}

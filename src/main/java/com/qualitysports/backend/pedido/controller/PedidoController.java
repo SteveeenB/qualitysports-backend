@@ -5,6 +5,7 @@ import com.qualitysports.backend.pedido.dto.*;
 import com.qualitysports.backend.pedido.service.PedidoService;
 import com.qualitysports.backend.user.Cliente;
 import com.qualitysports.backend.user.User;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -32,10 +33,21 @@ public class PedidoController {
     @ResponseStatus(HttpStatus.CREATED)
     public CheckoutResponse checkout(
             @Valid @RequestBody CheckoutRequest req,
-            @AuthenticationPrincipal User usuarioAutenticado
+            @AuthenticationPrincipal User usuarioAutenticado,
+            HttpServletRequest httpRequest
     ) {
         Cliente cliente = (usuarioAutenticado instanceof Cliente c) ? c : null;
-        return pedidoService.crearPedido(req, cliente);
+        String clientIp  = extraerIpReal(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        return pedidoService.crearPedido(req, cliente, clientIp, userAgent);
+    }
+
+    private static String extraerIpReal(HttpServletRequest req) {
+        String forwarded = req.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return req.getRemoteAddr();
     }
 
     // ── Rutas cliente autenticado ─────────────────────────────────────────────

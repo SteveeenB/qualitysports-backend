@@ -82,6 +82,14 @@ public class Pedido {
 
     private String transportadora;
 
+    private String hekaShipmentId;
+
+    @Column(precision = 12, scale = 2)
+    private BigDecimal costoEnvio;
+
+    @Column(name = "city_dane")
+    private String cityDane;
+
     @Builder.Default
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PedidoDetalle> detalles = new ArrayList<>();

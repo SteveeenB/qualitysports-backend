@@ -2,6 +2,7 @@ package com.qualitysports.backend.pedido.service;
 
 import com.qualitysports.backend.admin.entity.ReglaPaquete;
 import com.qualitysports.backend.admin.repository.ReglaPaqueteRepository;
+import com.qualitysports.backend.meta.service.MetaConversionsService;
 import com.qualitysports.backend.pedido.dto.*;
 import com.qualitysports.backend.pedido.entity.*;
 import com.qualitysports.backend.pedido.repository.*;
@@ -22,10 +23,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -40,6 +43,7 @@ public class PedidoService {
     private final AsesorVentasRepository asesorVentasRepository;
     private final ReglaPaqueteRepository reglaPaqueteRepository;
     private final UserRepository userRepository; // BUG 2: para registrar auditoría de admin
+    private final MetaConversionsService metaConversionsService;
 
     private static final List<String> CADENA_ESTADOS =
             List.of("Por confirmar", "Confirmado", "En despacho", "Entregado", "Devuelto");
@@ -47,7 +51,8 @@ public class PedidoService {
     private final AtomicInteger roundRobinIndex = new AtomicInteger(0);
 
     @Transactional
-    public CheckoutResponse crearPedido(CheckoutRequest req, Cliente clienteAutenticado) {
+    public CheckoutResponse crearPedido(CheckoutRequest req, Cliente clienteAutenticado,
+                                        String clientIp, String userAgent) {
         if (req.modalidadEntrega() == ModalidadEntrega.DOMICILIO
                 && (req.direccionEnvio() == null || req.direccionEnvio().isBlank())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -103,6 +108,7 @@ public class PedidoService {
                 .barrio(req.barrio())
                 .municipio(req.municipio())
                 .departamento(req.departamento())
+                .cityDane(req.cityDane())
                 .build();
         pedidoRepository.save(pedido);
 
@@ -137,9 +143,33 @@ public class PedidoService {
 
         String whatsappUrl = generarUrlWhatsApp(asesor, pedido, req.items(), productosCache);
 
+        // ── Meta Conversions API: envío asíncrono del evento Purchase ─────────
+        String metaEventId = UUID.randomUUID().toString();
+
+        List<Map<String, Object>> metaContents = new ArrayList<>();
+        List<String> metaContentIds = new ArrayList<>();
+        for (CheckoutItemRequest item : req.items()) {
+            Producto p = productosCache.get(item.productoId());
+            Map<String, Object> content = new HashMap<>();
+            content.put("id",         String.valueOf(p.getId()));
+            content.put("quantity",   item.cantidad());
+            content.put("item_price", p.getPrecioBase().doubleValue());
+            metaContents.add(content);
+            metaContentIds.add(String.valueOf(p.getId()));
+        }
+
+        metaConversionsService.enviarPurchase(
+                metaEventId, pedido.getId(), totalNeto,
+                metaContents, metaContentIds,
+                req.compradorEmail(), req.compradorTelefono(),
+                req.compradorNombre(), req.compradorApellido(),
+                req.municipio(), req.departamento(),
+                req.fbp(), req.fbc(),
+                clientIp, userAgent);
+
         return new CheckoutResponse(pedido.getId(),
                 pedido.getCompradorNombre(), pedido.getCompradorApellido(),
-                subtotal, descuentoAplicado, totalNeto, whatsappUrl, itemsResp);
+                subtotal, descuentoAplicado, totalNeto, whatsappUrl, itemsResp, metaEventId);
     }
 
     // BUG 1 FIX: @Transactional(readOnly=true) en todos los métodos de lectura
@@ -232,6 +262,42 @@ public class PedidoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asesor no encontrado"));
         pedido.setAsesor(nuevoAsesor);
         return toResponse(pedidoRepository.save(pedido));
+    }
+
+    @Transactional
+    public PedidoResponse registrarGuia(Long pedidoId, Long usuarioId,
+                                        String guideNumber, String distributorId,
+                                        String shipmentId, BigDecimal costoEnvio) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+
+        if (pedido.getGuia() != null && !pedido.getGuia().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Este pedido ya tiene guía: " + pedido.getGuia());
+        }
+
+        pedido.setGuia(guideNumber);
+        pedido.setTransportadora(distributorId);
+        pedido.setHekaShipmentId(shipmentId);
+        pedido.setCostoEnvio(costoEnvio);
+
+        EstadoPedido estadoAnterior = pedido.getEstadoActual();
+        EstadoPedido enDespacho = estadoPedidoRepository.findByNombreEstado("En despacho")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Estado 'En despacho' no configurado"));
+
+        pedido.setEstadoActual(enDespacho);
+        pedidoRepository.save(pedido);
+
+        User modificadoPor = userRepository.findById(usuarioId).orElse(null);
+        historialEstadoRepository.save(HistorialEstado.builder()
+                .pedido(pedido)
+                .modificadoPor(modificadoPor)
+                .estadoAnterior(estadoAnterior)
+                .estadoNuevo(enDespacho)
+                .observaciones("Guía generada: " + guideNumber + " — " + distributorId)
+                .build());
+
+        return toResponse(pedido);
     }
 
     // ── Lógica interna ───────────────────────────────────────────────────────
@@ -369,7 +435,10 @@ public class PedidoService {
                 pedido.getTotalNeto(),
                 detalles,
                 pedido.getGuia(),
-                pedido.getTransportadora()
+                pedido.getTransportadora(),
+                pedido.getHekaShipmentId(),
+                pedido.getCostoEnvio(),
+                pedido.getCityDane()
         );
     }
 }

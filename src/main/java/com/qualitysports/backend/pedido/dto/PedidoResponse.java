@@ -25,5 +25,6 @@ public record PedidoResponse(
         String guia,
         String transportadora,
         String hekaShipmentId,
-        java.math.BigDecimal costoEnvio
+        java.math.BigDecimal costoEnvio,
+        String cityDane
 ) {}

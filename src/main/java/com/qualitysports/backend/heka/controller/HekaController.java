@@ -4,7 +4,6 @@ import com.qualitysports.backend.heka.config.HekaProperties;
 import com.qualitysports.backend.heka.dto.*;
 import com.qualitysports.backend.heka.service.HekaShippingService;
 import com.qualitysports.backend.pedido.dto.PedidoResponse;
-import com.qualitysports.backend.pedido.entity.ModalidadEntrega;
 import com.qualitysports.backend.pedido.entity.Pedido;
 import com.qualitysports.backend.pedido.repository.PedidoRepository;
 import com.qualitysports.backend.pedido.service.PedidoService;
@@ -23,7 +22,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/heka")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ASESOR_VENTAS','ADMINISTRADOR')")
 public class HekaController {
 
     private final HekaShippingService hekaService;
@@ -33,7 +31,8 @@ public class HekaController {
     @GetMapping("/ciudades")
     public List<HekaCityResponse.CityItem> buscarCiudad(@RequestParam String label) {
         HekaCityResponse resp = hekaService.searchCity(label);
-        return resp != null && resp.response() != null ? resp.response() : List.of();
+        if (resp == null || resp.response() == null) return List.of();
+        return resp.response().rows() != null ? resp.response().rows() : List.of();
     }
 
     @GetMapping("/defaults")
@@ -53,6 +52,7 @@ public class HekaController {
         return resp != null && resp.response() != null ? resp.response() : List.of();
     }
 
+    @PreAuthorize("hasAnyRole('ASESOR_VENTAS','ADMINISTRADOR')")
     @PostMapping("/guia/{pedidoId}")
     public PedidoResponse generarGuia(
             @PathVariable Long pedidoId,
@@ -62,8 +62,13 @@ public class HekaController {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
 
-        if (pedido.getModalidadEntrega() != ModalidadEntrega.DOMICILIO) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo se generan guías para pedidos con modalidad DOMICILIO");
+        String cityDest = (req.cityDestination() != null && !req.cityDestination().isBlank())
+                ? req.cityDestination()
+                : pedido.getCityDane();
+
+        if (cityDest == null || cityDest.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "No se encontró código DANE para la ciudad destino");
         }
 
         String producto = pedido.getDetalles().stream()
@@ -74,7 +79,7 @@ public class HekaController {
 
         HekaCreateGuideRequest fullReq = new HekaCreateGuideRequest(
                 req.distributorId(),
-                req.cityDestination(),
+                cityDest,
                 req.declaredValue() != null ? req.declaredValue() : pedido.getTotalNeto(),
                 req.total(),
                 req.weight(),

@@ -8,8 +8,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record HekaCityResponse(
         int code,
-        List<CityItem> response
+        ResponseData response
 ) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ResponseData(List<CityItem> rows) {}
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record CityItem(
             @JsonProperty("_id")   String id,

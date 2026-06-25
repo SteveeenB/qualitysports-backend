@@ -58,9 +58,16 @@ public class JwtFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-        } catch (Exception e) {
-            // Token inválido o expirado — no autenticar, dejar que Spring Security maneje el 401
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+            // Token genuinamente inválido o expirado — dejar que Spring Security devuelva 401
             logger.debug("JWT inválido: " + e.getMessage());
+        } catch (Exception e) {
+            // Error de infraestructura (BD caída, etc.) — devolver 503 sin redirigir al login
+            logger.error("Error al procesar autenticación JWT: " + e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"message\":\"El servidor no está disponible. Intenta de nuevo.\"}");
+            return;
         }
 
         filterChain.doFilter(request, response);

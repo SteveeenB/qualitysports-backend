@@ -49,7 +49,13 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public Page<ProductoDTO> listarTodosConFiltros(String buscar, Long modeloId, Pageable pageable) {
         String q = (buscar != null && !buscar.isBlank()) ? buscar : null;
-        return productoRepository.findWithFilters(q, modeloId, pageable).map(this::toDTO);
+        if (q != null && modeloId != null)
+            return productoRepository.findByNombreContainingIgnoreCaseAndModelo_Id(q, modeloId, pageable).map(this::toDTO);
+        if (q != null)
+            return productoRepository.findByNombreContainingIgnoreCase(q, pageable).map(this::toDTO);
+        if (modeloId != null)
+            return productoRepository.findByModelo_Id(modeloId, pageable).map(this::toDTO);
+        return productoRepository.findAll(pageable).map(this::toDTO);
     }
 
     @Transactional(readOnly = true)

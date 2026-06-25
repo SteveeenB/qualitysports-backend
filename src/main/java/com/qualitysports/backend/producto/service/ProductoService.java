@@ -47,6 +47,12 @@ public class ProductoService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ProductoDTO> listarTodosConFiltros(String buscar, Long modeloId, Pageable pageable) {
+        String q = (buscar != null && !buscar.isBlank()) ? buscar : null;
+        return productoRepository.findWithFilters(q, modeloId, pageable).map(this::toDTO);
+    }
+
+    @Transactional(readOnly = true)
     public ProductoDTO obtenerPorId(Long id) {
         return productoRepository.findByIdAndActivoTrue(id)
                 .map(this::toDTO)

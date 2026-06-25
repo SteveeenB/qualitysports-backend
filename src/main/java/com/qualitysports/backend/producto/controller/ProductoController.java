@@ -53,8 +53,11 @@ public class ProductoController {
     // ── Rutas admin — productos ───────────────────────────────────────────────
 
     @GetMapping("/api/admin/productos")
-    public Page<ProductoDTO> listarAdmin(@PageableDefault(size = 20) Pageable pageable) {
-        return productoService.listarTodos(pageable);
+    public Page<ProductoDTO> listarAdmin(
+            @RequestParam(required = false) String buscar,
+            @RequestParam(required = false) Long modeloId,
+            @PageableDefault(size = 15) Pageable pageable) {
+        return productoService.listarTodosConFiltros(buscar, modeloId, pageable);
     }
 
     @GetMapping("/api/admin/productos/{id}")

@@ -66,8 +66,12 @@ public class AdminService {
     public AsesorDTO actualizarAsesor(Long id, ActualizarAsesorRequest req) {
         AsesorVentas asesor = asesorVentasRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asesor no encontrado."));
-        if (req.nombre()   != null) asesor.setNombre(req.nombre());
-        if (req.email()    != null) asesor.setEmail(req.email());
+        if (req.nombre() != null) asesor.setNombre(req.nombre());
+        if (req.email()  != null && !req.email().equalsIgnoreCase(asesor.getEmail())) {
+            if (userRepository.existsByEmail(req.email()))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo.");
+            asesor.setEmail(req.email());
+        }
         if (req.telefono() != null) asesor.setTelefono(req.telefono());
         if (req.activo()   != null) asesor.setActivo(req.activo());
         asesor = asesorVentasRepository.save(asesor);

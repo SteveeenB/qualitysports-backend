@@ -1,6 +1,7 @@
 package com.qualitysports.backend.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -44,6 +45,13 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Datos de entrada inválidos");
         return ResponseEntity.badRequest().body(new ErrorBody(msg));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorBody> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("[Integridad de datos] {}", ex.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorBody("Ya existe un registro con esos datos."));
     }
 
     @ExceptionHandler(Exception.class)

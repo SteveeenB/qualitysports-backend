@@ -22,5 +22,8 @@ public record CheckoutRequest(
         @NotEmpty @Valid List<CheckoutItemRequest> items,
         String cityDane,
         String fbp,
-        String fbc
+        String fbc,
+        // Consentimiento Ley 1581 — obligatorio para el tratamiento de datos
+        @NotNull Boolean consentimientoDatos,
+        Boolean consentimientoMarketing
 ) {}

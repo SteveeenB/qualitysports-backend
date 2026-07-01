@@ -90,6 +90,18 @@ public class Pedido {
     @Column(name = "city_dane")
     private String cityDane;
 
+    // Consentimiento Ley 1581 de 2012 — registrado en el momento del pedido
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean consentimientoDatos = false;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean consentimientoMarketing = false;
+
+    @Column(length = 10)
+    private String versionPolitica;
+
     @Builder.Default
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PedidoDetalle> detalles = new ArrayList<>();

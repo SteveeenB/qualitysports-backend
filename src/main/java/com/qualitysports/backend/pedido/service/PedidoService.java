@@ -109,6 +109,9 @@ public class PedidoService {
                 .municipio(req.municipio())
                 .departamento(req.departamento())
                 .cityDane(req.cityDane())
+                .consentimientoDatos(Boolean.TRUE.equals(req.consentimientoDatos()))
+                .consentimientoMarketing(Boolean.TRUE.equals(req.consentimientoMarketing()))
+                .versionPolitica("1.0")
                 .build();
         pedidoRepository.save(pedido);
 
@@ -143,29 +146,33 @@ public class PedidoService {
 
         String whatsappUrl = generarUrlWhatsApp(asesor, pedido, req.items(), productosCache);
 
-        // ── Meta Conversions API: envío asíncrono del evento Purchase ─────────
-        String metaEventId = UUID.randomUUID().toString();
+        // ── Meta Conversions API: solo si el usuario otorgó consentimiento de marketing ──
+        String metaEventId = null;
 
-        List<Map<String, Object>> metaContents = new ArrayList<>();
-        List<String> metaContentIds = new ArrayList<>();
-        for (CheckoutItemRequest item : req.items()) {
-            Producto p = productosCache.get(item.productoId());
-            Map<String, Object> content = new HashMap<>();
-            content.put("id",         String.valueOf(p.getId()));
-            content.put("quantity",   item.cantidad());
-            content.put("item_price", p.getPrecioBase().doubleValue());
-            metaContents.add(content);
-            metaContentIds.add(String.valueOf(p.getId()));
+        if (Boolean.TRUE.equals(req.consentimientoMarketing())) {
+            metaEventId = UUID.randomUUID().toString();
+
+            List<Map<String, Object>> metaContents = new ArrayList<>();
+            List<String> metaContentIds = new ArrayList<>();
+            for (CheckoutItemRequest item : req.items()) {
+                Producto p = productosCache.get(item.productoId());
+                Map<String, Object> content = new HashMap<>();
+                content.put("id",         String.valueOf(p.getId()));
+                content.put("quantity",   item.cantidad());
+                content.put("item_price", p.getPrecioBase().doubleValue());
+                metaContents.add(content);
+                metaContentIds.add(String.valueOf(p.getId()));
+            }
+
+            metaConversionsService.enviarPurchase(
+                    metaEventId, pedido.getId(), totalNeto,
+                    metaContents, metaContentIds,
+                    req.compradorEmail(), req.compradorTelefono(),
+                    req.compradorNombre(), req.compradorApellido(),
+                    req.municipio(), req.departamento(),
+                    req.fbp(), req.fbc(),
+                    clientIp, userAgent);
         }
-
-        metaConversionsService.enviarPurchase(
-                metaEventId, pedido.getId(), totalNeto,
-                metaContents, metaContentIds,
-                req.compradorEmail(), req.compradorTelefono(),
-                req.compradorNombre(), req.compradorApellido(),
-                req.municipio(), req.departamento(),
-                req.fbp(), req.fbc(),
-                clientIp, userAgent);
 
         return new CheckoutResponse(pedido.getId(),
                 pedido.getCompradorNombre(), pedido.getCompradorApellido(),

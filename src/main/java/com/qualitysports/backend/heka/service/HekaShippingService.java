@@ -130,7 +130,16 @@ public class HekaShippingService {
                     url, HttpMethod.POST,
                     new HttpEntity<>(body, bearerHeaders()),
                     HekaCreateGuideResponse.class);
-            return resp.getBody();
+            HekaCreateGuideResponse body2 = resp.getBody();
+            if (body2 != null && body2.response() != null) {
+                log.info("[Heka] createGuide OK — guideNumber={} shipmentId={} status={}",
+                        body2.response().guideNumber(),
+                        body2.response().shipmentId(),
+                        body2.response().status());
+            } else {
+                log.warn("[Heka] createGuide respuesta vacía o sin response: {}", body2);
+            }
+            return body2;
         } catch (HttpClientErrorException e) {
             log.error("[Heka] createGuide HTTP error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,

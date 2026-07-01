@@ -104,6 +104,10 @@ public class HekaController {
         if (hekaResp == null || hekaResp.response() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Respuesta inválida de HekaEntrega");
         }
+        if (hekaResp.response().guideNumber() == null || hekaResp.response().guideNumber().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "HekaEntrega no devolvió número de guía (shipmentId=" + hekaResp.response().shipmentId() + ")");
+        }
 
         return pedidoService.registrarGuia(
                 pedidoId,

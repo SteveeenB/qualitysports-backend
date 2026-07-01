@@ -445,7 +445,10 @@ public class PedidoService {
                 pedido.getTransportadora(),
                 pedido.getHekaShipmentId(),
                 pedido.getCostoEnvio(),
-                pedido.getCityDane()
+                pedido.getCityDane(),
+                pedido.getBarrio(),
+                pedido.getCompradorCedula(),
+                pedido.getCompradorEmail()
         );
     }
 }

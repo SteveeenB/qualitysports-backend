@@ -132,12 +132,13 @@ public class HekaShippingService {
                     HekaCreateGuideResponse.class);
             HekaCreateGuideResponse body2 = resp.getBody();
             if (body2 != null && body2.response() != null) {
-                log.info("[Heka] createGuide OK — guideNumber={} shipmentId={} status={}",
+                log.info("[Heka] createGuide — allFields={} guideNumber={} shipmentId={} status={}",
+                        body2.response().allFields(),
                         body2.response().guideNumber(),
                         body2.response().shipmentId(),
                         body2.response().status());
             } else {
-                log.warn("[Heka] createGuide respuesta vacía o sin response: {}", body2);
+                log.warn("[Heka] createGuide respuesta vacía o sin response: code={}", body2 != null ? body2.code() : "null");
             }
             return body2;
         } catch (HttpClientErrorException e) {

@@ -182,7 +182,7 @@ public class PedidoService {
     // BUG 1 FIX: @Transactional(readOnly=true) en todos los métodos de lectura
     @Transactional(readOnly = true)
     public List<PedidoResponse> pedidosDeCliente(Long clienteId) {
-        return pedidoRepository.findByCliente_Id(clienteId).stream()
+        return pedidoRepository.findByClienteIdConDetalles(clienteId).stream()
                 .map(this::toResponse).toList();
     }
 
@@ -195,7 +195,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public List<PedidoResponse> pedidosDeAsesor(Long asesorId) {
-        return pedidoRepository.findByAsesor_Id(asesorId).stream()
+        return pedidoRepository.findByAsesorIdConDetalles(asesorId).stream()
                 .map(this::toResponse).toList();
     }
 
@@ -211,7 +211,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public List<PedidoResponse> todosLosPedidos() {
-        return pedidoRepository.findAll().stream().map(this::toResponse).toList();
+        return pedidoRepository.findAllConDetalles().stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)

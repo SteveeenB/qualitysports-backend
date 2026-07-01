@@ -48,6 +48,10 @@ public class HekaShippingService {
     }
 
     public HekaQuoteResponse quote(HekaQuoteRequest req) {
+        if (props.getApiKey() == null || props.getApiKey().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Integración HekaEntrega no configurada. Configura las variables de entorno HEKA_*.");
+        }
         Map<String, Object> body = new HashMap<>();
         body.put("city_origin", props.getCityOrigin());
         body.put("city_destination", req.cityDestination());

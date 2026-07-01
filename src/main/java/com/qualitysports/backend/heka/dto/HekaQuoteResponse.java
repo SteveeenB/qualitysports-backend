@@ -16,6 +16,15 @@ public record HekaQuoteResponse(
             String distributorId,
             BigDecimal total,
             @JsonAlias("deliveryTime") String days,
-            BigDecimal commission
+            BigDecimal flete,
+            BigDecimal visualFlete,
+            BigDecimal valueDeposited,
+            BigDecimal transportCommission,
+            BigDecimal hekaCommission,
+            BigDecimal transportCollection,
+            BigDecimal assured,
+            BigDecimal gmf,
+            String annotations,
+            @JsonAlias("onlyToAddress") boolean onlyToAddress
     ) {}
 }

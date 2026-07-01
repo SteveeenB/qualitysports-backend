@@ -25,6 +25,6 @@ public record HekaQuoteResponse(
             BigDecimal assured,
             BigDecimal gmf,
             String annotations,
-            @JsonAlias("onlyToAddress") boolean onlyToAddress
+            @JsonAlias("onlyToAddress") Boolean onlyToAddress
     ) {}
 }

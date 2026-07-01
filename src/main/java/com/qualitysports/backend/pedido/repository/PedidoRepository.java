@@ -16,7 +16,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
            "LEFT JOIN FETCH p.detalles d " +
            "LEFT JOIN FETCH d.producto " +
            "LEFT JOIN FETCH p.estadoActual " +
-           "LEFT JOIN FETCH p.asesor " +
            "ORDER BY p.fecha DESC")
     List<Pedido> findAllConDetalles();
 
@@ -24,7 +23,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
            "LEFT JOIN FETCH p.detalles d " +
            "LEFT JOIN FETCH d.producto " +
            "LEFT JOIN FETCH p.estadoActual " +
-           "LEFT JOIN FETCH p.asesor " +
            "WHERE p.cliente.id = :clienteId " +
            "ORDER BY p.fecha DESC")
     List<Pedido> findByClienteIdConDetalles(@Param("clienteId") Long clienteId);
@@ -33,7 +31,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
            "LEFT JOIN FETCH p.detalles d " +
            "LEFT JOIN FETCH d.producto " +
            "LEFT JOIN FETCH p.estadoActual " +
-           "LEFT JOIN FETCH p.asesor " +
            "WHERE p.asesor.id = :asesorId " +
            "ORDER BY p.fecha DESC")
     List<Pedido> findByAsesorIdConDetalles(@Param("asesorId") Long asesorId);

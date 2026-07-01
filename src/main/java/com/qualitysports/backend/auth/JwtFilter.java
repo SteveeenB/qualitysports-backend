@@ -14,17 +14,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Filtro que intercepta cada request para validar el JWT del header Authorization.
- * Si el token es válido, establece la autenticación en el SecurityContext.
- */
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+
+    // Avoids a DB round-trip on every authenticated request — cleared on redeploy
+    private final ConcurrentHashMap<String, UserDetails> userCache = new ConcurrentHashMap<>();
 
     @Override
     protected void doFilterInternal(
@@ -35,7 +35,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // Si no hay header Authorization o no empieza con "Bearer ", continuar sin autenticar
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -44,10 +43,17 @@ public class JwtFilter extends OncePerRequestFilter {
         final String token = authHeader.substring(7);
 
         try {
+            // extractEmail() verifies signature and expiration in-memory — throws JwtException if invalid
             final String email = jwtUtil.extractEmail(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userRepository.findByEmail(email).orElse(null);
+                UserDetails userDetails = userCache.get(email);
+                if (userDetails == null) {
+                    userDetails = userRepository.findByEmail(email).orElse(null);
+                    if (userDetails != null) {
+                        userCache.put(email, userDetails);
+                    }
+                }
 
                 if (userDetails != null && jwtUtil.isTokenValid(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken =
@@ -59,10 +65,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
-            // Token genuinamente inválido o expirado — dejar que Spring Security devuelva 401
             logger.debug("JWT inválido: " + e.getMessage());
         } catch (Exception e) {
-            // Error de infraestructura (BD caída, etc.) — devolver 503 sin redirigir al login
             logger.error("Error al procesar autenticación JWT: " + e.getMessage(), e);
             response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             response.setContentType("application/json;charset=UTF-8");
